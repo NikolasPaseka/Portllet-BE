@@ -79,10 +79,10 @@ router.get('/', handleAsync(async (req: AuthRequest, res) => {
     orderBy: { name: 'asc' },
   });
 
-  const tickers = [...new Set(stocks.map((s) => s.ticker))];
+  const tickers = [...new Set(stocks.map((s: any) => s.ticker))] as string[];
   const priceMap = await getStockPrices(tickers);
 
-  const result = stocks.map((s) => mapStock(s, priceMap[s.ticker] ?? null));
+  const result = stocks.map((s: any) => mapStock(s, priceMap[s.ticker] ?? null));
 
   return success(res, result);
 }));

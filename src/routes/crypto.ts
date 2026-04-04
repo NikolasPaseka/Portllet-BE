@@ -79,10 +79,10 @@ router.get('/', handleAsync(async (req: AuthRequest, res) => {
     orderBy: { name: 'asc' },
   });
 
-  const symbols = [...new Set(cryptos.map((c) => c.symbol))] as string[];
+  const symbols = [...new Set(cryptos.map((c: any) => c.symbol))] as string[];
   const priceMap = await getCryptoPrices(symbols);
 
-  const result = cryptos.map((c) => mapCrypto(c, priceMap[c.symbol.toUpperCase()] ?? null));
+  const result = cryptos.map((c: any) => mapCrypto(c, priceMap[c.symbol.toUpperCase()] ?? null));
 
   return success(res, result);
 }));

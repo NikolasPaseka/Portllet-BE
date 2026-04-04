@@ -78,11 +78,11 @@ router.get('/', handleAsync(async (req: AuthRequest, res) => {
     orderBy: { name: 'asc' },
   });
 
-  const result = banks.map((b) => ({
+  const result = banks.map((b: any) => ({
     id: b.id,
     name: b.name,
     createdAt: b.createdAt,
-    accounts: b.bankAccounts.map((a) => mapAccount(a, b.name)),
+    accounts: b.bankAccounts.map((a: any) => mapAccount(a, b.name)),
   }));
 
   return success(res, result);

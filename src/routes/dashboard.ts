@@ -74,16 +74,16 @@ router.get('/dashboard', authenticate, handleAsync(async (req: AuthRequest, res)
     where: { userId: req.userId! },
   });
   const banksCzk = accounts.reduce(
-    (sum: number, a) => sum + convertToCzk(Number(a.balance), a.currency, rate),
+    (sum: number, a: any) => sum + convertToCzk(Number(a.balance), a.currency, rate),
     0
   );
 
   const stocks = await prisma.stock.findMany({
     where: { userId: req.userId! },
   });
-  const stockTickers = [...new Set(stocks.map((s) => s.ticker))] as string[];
+  const stockTickers = [...new Set(stocks.map((s: any) => s.ticker))] as string[];
   const stockPrices = await getStockPrices(stockTickers);
-  const stocksCzk = stocks.reduce((sum: number, s) => {
+  const stocksCzk = stocks.reduce((sum: number, s: any) => {
     const livePrice = stockPrices[s.ticker];
     return sum + (livePrice != null ? convertToCzk(Number(s.shares) * livePrice, 'USD', rate) : 0);
   }, 0);
@@ -91,9 +91,9 @@ router.get('/dashboard', authenticate, handleAsync(async (req: AuthRequest, res)
   const cryptos = await prisma.crypto.findMany({
     where: { userId: req.userId! },
   });
-  const cryptoSymbols = [...new Set(cryptos.map((c) => c.symbol.toUpperCase()))] as string[];
+  const cryptoSymbols = [...new Set(cryptos.map((c: any) => c.symbol.toUpperCase()))] as string[];
   const cryptoPrices = await getCryptoPrices(cryptoSymbols);
-  const cryptoCzk = cryptos.reduce((sum: number, c) => {
+  const cryptoCzk = cryptos.reduce((sum: number, c: any) => {
     const livePrice = cryptoPrices[c.symbol.toUpperCase()];
     return sum + (livePrice != null ? convertToCzk(Number(c.amount) * livePrice, 'USD', rate) : 0);
   }, 0);
@@ -102,7 +102,7 @@ router.get('/dashboard', authenticate, handleAsync(async (req: AuthRequest, res)
     where: { userId: req.userId! },
   });
   const otherCzk = assets.reduce(
-    (sum: number, a) => sum + convertToCzk(Number(a.value), a.currency, rate),
+    (sum: number, a: any) => sum + convertToCzk(Number(a.value), a.currency, rate),
     0
   );
 
