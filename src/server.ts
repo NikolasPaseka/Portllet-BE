@@ -67,6 +67,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Routes
+app.use('/', dashboardRoutes);
 app.use('/auth', authRoutes);
 app.use('/cash', cashRoutes);
 app.use('/banks', bankRoutes);
@@ -75,7 +76,6 @@ app.use('/', envelopeRoutes);
 app.use('/stocks', stockRoutes);
 app.use('/crypto', cryptoRoutes);
 app.use('/assets', assetRoutes);
-app.use('/', dashboardRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

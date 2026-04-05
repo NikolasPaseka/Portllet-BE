@@ -119,4 +119,10 @@ router.get('/dashboard', authenticate, handleAsync(async (req: AuthRequest, res)
   });
 }));
 
+// Public - no auth required
+router.get('/', handleAsync(async (req: Request, res) => {
+    return success(res, { message: 'Welcome to Portllet API' });
+}));
+
+
 export default router;
