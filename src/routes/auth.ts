@@ -6,6 +6,17 @@ import { generateAccessToken, generateRefreshToken, validateAccessToken } from '
 import { authenticate } from '../middleware/auth.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { success, error, handleAsync } from '../utils/response.js';
+import {
+  getGoogleAuthUrl,
+  exchangeCodeForTokens,
+  getGoogleUserInfo,
+  saveGoogleAccount,
+  getCalendarEvents,
+  disconnectGoogleAccount,
+  getGoogleAccountStatus,
+  getValidAccessToken,
+} from '../services/googleService.js';
+import { config } from '../config.js';
 
 /**
  * @swagger
@@ -185,7 +196,7 @@ router.post('/register', handleAsync(async (req: AuthRequest, res) => {
     data: {
       userId: user.id,
       token: refreshTokenStr,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     },
   });
 
@@ -221,7 +232,7 @@ router.post('/login', handleAsync(async (req: AuthRequest, res) => {
     data: {
       userId: user.id,
       token: refreshTokenStr,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     },
   });
 
@@ -265,7 +276,7 @@ router.post('/refresh', handleAsync(async (req: AuthRequest, res) => {
     data: {
       userId: stored.userId,
       token: newRefreshTokenStr,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     },
   });
 
@@ -312,6 +323,56 @@ router.get('/me', authenticate, handleAsync(async (req: AuthRequest, res) => {
     name: user.name,
     createdAt: user.createdAt,
   });
+}));
+
+router.get('/google', authenticate, handleAsync(async (_req: AuthRequest, res) => {
+  if (!config.googleClientId || !config.googleClientSecret) {
+    return error(res, 'CONFIG_ERROR', 'Google OAuth not configured', 500);
+  }
+
+  const state = Buffer.from(JSON.stringify({ userId: _req.userId })).toString('base64');
+  const authUrl = getGoogleAuthUrl(state);
+  return success(res, { url: authUrl });
+}));
+
+router.get('/google/callback', handleAsync(async (req, res) => {
+  const { code, state, error: authError } = req.query;
+
+  if (authError) {
+    return res.redirect(`${config.frontendUrl}/?google_error=${authError}`);
+  }
+
+  if (!code || typeof code !== 'string' || !state || typeof state !== 'string') {
+    return res.redirect(`${config.frontendUrl}/?google_error=missing_params`);
+  }
+
+  let userId: string;
+  try {
+    const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
+    userId = decoded.userId;
+  } catch {
+    return res.redirect(`${config.frontendUrl}/?google_error=invalid_state`);
+  }
+
+  try {
+    const tokens = await exchangeCodeForTokens(code);
+    const userInfo = await getGoogleUserInfo(tokens.access_token);
+    await saveGoogleAccount(userId, userInfo.id, userInfo.email, tokens);
+    return res.redirect(`${config.frontendUrl}/?google_connected=true`);
+  } catch (err) {
+    console.error('Google OAuth error:', err);
+    return res.redirect(`${config.frontendUrl}/?google_error=oauth_failed`);
+  }
+}));
+
+router.get('/google/status', authenticate, handleAsync(async (req: AuthRequest, res) => {
+  const status = await getGoogleAccountStatus(req.userId!);
+  return success(res, status);
+}));
+
+router.delete('/google', authenticate, handleAsync(async (req: AuthRequest, res) => {
+  await disconnectGoogleAccount(req.userId!);
+  return success(res, { message: 'Google account disconnected' });
 }));
 
 export default router;

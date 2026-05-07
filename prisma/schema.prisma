@@ -7,16 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Currency {
-  CZK
-  USD
-}
-
-enum AccountType {
-  common
-  saving
-}
-
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
@@ -24,14 +14,15 @@ model User {
   name          String
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
-
-  cashBalance     CashBalance?
-  banks           Bank[]
-  bankAccounts    BankAccount[]
-  stocks          Stock[]
-  cryptos         Crypto[]
-  otherAssets     OtherAsset[]
-  refreshTokens   RefreshToken[]
+  bankAccounts  BankAccount[]
+  banks         Bank[]
+  cashBalance   CashBalance?
+  cryptos       Crypto[]
+  otherAssets   OtherAsset[]
+  refreshTokens RefreshToken[]
+  stocks        Stock[]
+  googleAccounts GoogleAccount[]
+  todoSections   TodoSection[]
 
   @@map("users")
 }
@@ -43,8 +34,7 @@ model RefreshToken {
   expiresAt DateTime @map("expires_at")
   isRevoked Boolean  @default(false) @map("is_revoked")
   createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
 }
@@ -54,39 +44,36 @@ model CashBalance {
   userId   String   @unique @map("user_id")
   amount   Decimal  @default(0) @db.Decimal(18, 4)
   currency Currency @default(CZK)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("cash_balances")
 }
 
 model Bank {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  name      String
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String        @id @default(uuid())
+  userId       String        @map("user_id")
+  name         String
+  createdAt    DateTime      @default(now()) @map("created_at")
   bankAccounts BankAccount[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, name])
   @@map("banks")
 }
 
 model BankAccount {
-  id           String      @id @default(uuid())
-  userId       String      @map("user_id")
-  bankId       String      @map("bank_id")
+  id           String        @id @default(uuid())
+  userId       String        @map("user_id")
+  bankId       String        @map("bank_id")
   name         String
   type         AccountType
-  balance      Decimal     @default(0) @db.Decimal(18, 4)
+  balance      Decimal       @default(0) @db.Decimal(18, 4)
   currency     Currency
-  interestRate Decimal?    @map("interest_rate") @db.Decimal(5, 2)
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
-
+  interestRate Decimal?      @map("interest_rate") @db.Decimal(5, 2)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  bank         Bank          @relation(fields: [bankId], references: [id])
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bank         Bank          @relation(fields: [bankId], references: [id], onDelete: Restrict)
   envelopes    Envelope[]
   interestLogs InterestLog[]
 
@@ -94,28 +81,26 @@ model BankAccount {
 }
 
 model Envelope {
-  id            String   @id @default(uuid())
-  accountId     String   @map("account_id")
+  id            String      @id @default(uuid())
+  accountId     String      @map("account_id")
   name          String
-  targetAmount  Decimal  @map("target_amount") @db.Decimal(18, 4)
-  currentAmount Decimal  @default(0) @map("current_amount") @db.Decimal(18, 4)
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  bankAccount BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  targetAmount  Decimal     @map("target_amount") @db.Decimal(18, 4)
+  currentAmount Decimal     @default(0) @map("current_amount") @db.Decimal(18, 4)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  bankAccount   BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@map("envelopes")
 }
 
 model InterestLog {
-  id               String   @id @default(uuid())
-  accountId        String   @map("account_id")
-  previousBalance  Decimal  @map("previous_balance") @db.Decimal(18, 4)
-  interestAmount   Decimal  @map("interest_amount") @db.Decimal(18, 4)
-  newBalance       Decimal  @map("new_balance") @db.Decimal(18, 4)
-  interestRate     Decimal  @map("interest_rate") @db.Decimal(5, 2)
-  appliedAt        DateTime @default(now()) @map("applied_at")
-
-  bankAccount BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  id              String      @id @default(uuid())
+  accountId       String      @map("account_id")
+  previousBalance Decimal     @map("previous_balance") @db.Decimal(18, 4)
+  interestAmount  Decimal     @map("interest_amount") @db.Decimal(18, 4)
+  newBalance      Decimal     @map("new_balance") @db.Decimal(18, 4)
+  interestRate    Decimal     @map("interest_rate") @db.Decimal(5, 2)
+  appliedAt       DateTime    @default(now()) @map("applied_at")
+  bankAccount     BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@map("interest_logs")
 }
@@ -128,8 +113,8 @@ model Stock {
   shares    Decimal  @db.Decimal(18, 8)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source    String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("stocks")
 }
@@ -142,8 +127,8 @@ model Crypto {
   amount    Decimal  @db.Decimal(18, 8)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source    String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("cryptos")
 }
@@ -156,8 +141,89 @@ model OtherAsset {
   currency  Currency
   note      String?
   createdAt DateTime @default(now()) @map("created_at")
+  source    String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("other_assets")
+}
+
+enum Currency {
+  CZK
+  USD
+}
+
+enum AccountType {
+  common
+  saving
+}
+
+enum RepeatType {
+  none
+  daily
+  weekly
+  monthly
+}
+
+model GoogleAccount {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  googleId     String   @map("google_id")
+  email        String
+  accessToken  String   @map("access_token")
+  refreshToken String   @map("refresh_token")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("other_assets")
+  @@unique([userId, googleId])
+  @@map("google_accounts")
+}
+
+model TodoSection {
+  id          String      @id @default(uuid())
+  userId      String      @map("user_id")
+  name        String
+  color       String      @default("#6366f1")
+  position    Int         @default(0) @map("position")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks       TodoTask[]
+
+  @@map("todo_sections")
+}
+
+model TodoTask {
+  id          String       @id @default(uuid())
+  sectionId   String       @map("section_id")
+  title       String
+  description String?      @map("description")
+  dueDate     DateTime?    @map("due_date")
+  duration    Int?         @map("duration")
+  repeat      RepeatType   @default(none)
+  completed   Boolean      @default(false)
+  position    Int          @default(0) @map("position")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  section     TodoSection  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  subtasks    TodoSubtask[]
+
+  @@map("todo_tasks")
+}
+
+model TodoSubtask {
+  id        String    @id @default(uuid())
+  taskId    String    @map("task_id")
+  title     String
+  completed Boolean   @default(false)
+  position  Int       @default(0) @map("position")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  task      TodoTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("todo_subtasks")
 }

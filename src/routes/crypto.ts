@@ -52,12 +52,14 @@ const createCryptoSchema = z.object({
   name: z.string().min(1),
   symbol: z.string().min(1),
   amount: z.number(),
+  source: z.string().optional(),
 });
 
 const updateCryptoSchema = z.object({
   name: z.string().min(1).optional(),
   symbol: z.string().min(1).optional(),
   amount: z.number().optional(),
+  source: z.string().optional(),
 });
 
 function mapCrypto(c: any, livePrice: number | null) {
@@ -66,6 +68,7 @@ function mapCrypto(c: any, livePrice: number | null) {
     name: c.name,
     symbol: c.symbol,
     amount: Number(c.amount),
+    source: c.source,
     livePriceUsd: livePrice,
     totalValueUsd: livePrice != null ? Number((Number(c.amount) * livePrice).toFixed(4)) : null,
     createdAt: c.createdAt,
@@ -99,6 +102,7 @@ router.post('/', handleAsync(async (req: AuthRequest, res) => {
       name: parsed.data.name,
       symbol: parsed.data.symbol.toUpperCase(),
       amount: parsed.data.amount,
+      source: parsed.data.source ?? null,
     },
   });
 
@@ -125,6 +129,7 @@ router.put('/:id', handleAsync(async (req: AuthRequest, res) => {
   if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
   if (parsed.data.symbol !== undefined) updateData.symbol = parsed.data.symbol.toUpperCase();
   if (parsed.data.amount !== undefined) updateData.amount = parsed.data.amount;
+  if (parsed.data.source !== undefined) updateData.source = parsed.data.source;
 
   const updated = await prisma.crypto.update({
     where: { id },

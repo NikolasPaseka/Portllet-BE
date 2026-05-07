@@ -16,6 +16,8 @@ import stockRoutes from './routes/stocks.js';
 import cryptoRoutes from './routes/crypto.js';
 import assetRoutes from './routes/assets.js';
 import dashboardRoutes from './routes/dashboard.js';
+import calendarRoutes from './routes/calendar.js';
+import todoRoutes from './routes/todos.js';
 import { applyMonthlyInterest } from './services/interestJob.js';
 
 const app = express();
@@ -76,6 +78,8 @@ app.use('/', envelopeRoutes);
 app.use('/stocks', stockRoutes);
 app.use('/crypto', cryptoRoutes);
 app.use('/assets', assetRoutes);
+app.use('/calendar', calendarRoutes);
+app.use('/todos', todoRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

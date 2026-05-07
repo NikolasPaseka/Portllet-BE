@@ -52,12 +52,14 @@ const createStockSchema = z.object({
   name: z.string().min(1),
   ticker: z.string().min(1),
   shares: z.number(),
+  source: z.string().optional(),
 });
 
 const updateStockSchema = z.object({
   name: z.string().min(1).optional(),
   ticker: z.string().min(1).optional(),
   shares: z.number().optional(),
+  source: z.string().optional(),
 });
 
 function mapStock(s: any, livePrice: number | null) {
@@ -66,6 +68,7 @@ function mapStock(s: any, livePrice: number | null) {
     name: s.name,
     ticker: s.ticker,
     shares: Number(s.shares),
+    source: s.source,
     livePriceUsd: livePrice,
     totalValueUsd: livePrice != null ? Number((Number(s.shares) * livePrice).toFixed(4)) : null,
     createdAt: s.createdAt,
@@ -99,6 +102,7 @@ router.post('/', handleAsync(async (req: AuthRequest, res) => {
       name: parsed.data.name,
       ticker: parsed.data.ticker.toUpperCase(),
       shares: parsed.data.shares,
+      source: parsed.data.source ?? null,
     },
   });
 
@@ -125,6 +129,7 @@ router.put('/:id', handleAsync(async (req: AuthRequest, res) => {
   if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
   if (parsed.data.ticker !== undefined) updateData.ticker = parsed.data.ticker.toUpperCase();
   if (parsed.data.shares !== undefined) updateData.shares = parsed.data.shares;
+  if (parsed.data.source !== undefined) updateData.source = parsed.data.source;
 
   const updated = await prisma.stock.update({
     where: { id },

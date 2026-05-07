@@ -56,6 +56,7 @@ const createAssetSchema = z.object({
   value: z.number(),
   currency: z.enum(['CZK', 'USD']),
   note: z.string().nullable().optional(),
+  source: z.string().optional(),
 });
 
 const updateAssetSchema = z.object({
@@ -63,6 +64,7 @@ const updateAssetSchema = z.object({
   value: z.number().optional(),
   currency: z.enum(['CZK', 'USD']).optional(),
   note: z.string().nullable().optional(),
+  source: z.string().optional(),
 });
 
 function mapAsset(a: any) {
@@ -72,6 +74,7 @@ function mapAsset(a: any) {
     value: Number(a.value),
     currency: a.currency,
     note: a.note,
+    source: a.source,
     createdAt: a.createdAt,
   };
 }
@@ -98,6 +101,7 @@ router.post('/', handleAsync(async (req: AuthRequest, res) => {
       value: parsed.data.value,
       currency: parsed.data.currency,
       note: parsed.data.note ?? null,
+      source: parsed.data.source ?? null,
     },
   });
 
@@ -123,6 +127,7 @@ router.put('/:id', handleAsync(async (req: AuthRequest, res) => {
   if (parsed.data.value !== undefined) updateData.value = parsed.data.value;
   if (parsed.data.currency !== undefined) updateData.currency = parsed.data.currency;
   if (parsed.data.note !== undefined) updateData.note = parsed.data.note;
+  if (parsed.data.source !== undefined) updateData.source = parsed.data.source;
 
   const updated = await prisma.otherAsset.update({
     where: { id },
