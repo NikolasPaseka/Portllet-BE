@@ -122,15 +122,16 @@ router.put('/sections', authenticate, handleAsync(async (req: AuthRequest, res) 
 }));
 
 router.delete('/sections/:id', authenticate, handleAsync(async (req: AuthRequest, res) => {
+  const sectionId = req.params.id as string
   const section = await prisma.todoSection.findFirst({
-    where: { id: req.params.id, userId: req.userId! },
+    where: { id: sectionId, userId: req.userId! },
   });
 
   if (!section) {
     return error(res, 'NOT_FOUND', 'Section not found', 404);
   }
 
-  await prisma.todoSection.delete({ where: { id: req.params.id } });
+  await prisma.todoSection.delete({ where: { id: sectionId } });
 
   return success(res, { message: 'Section deleted' });
 }));
@@ -300,16 +301,24 @@ router.put('/tasks', authenticate, handleAsync(async (req: AuthRequest, res) => 
 }));
 
 router.delete('/tasks/:id', authenticate, handleAsync(async (req: AuthRequest, res) => {
+  const taskId = req.params.id as string
   const task = await prisma.todoTask.findFirst({
-    where: { id: req.params.id },
-    include: { section: true },
+    where: { id: taskId },
   });
 
-  if (!task || task.section.userId !== req.userId) {
+  if (!task) {
     return error(res, 'NOT_FOUND', 'Task not found', 404);
   }
 
-  await prisma.todoTask.delete({ where: { id: req.params.id } });
+  const section = await prisma.todoSection.findFirst({
+    where: { id: task.sectionId, userId: req.userId! },
+  });
+
+  if (!section) {
+    return error(res, 'NOT_FOUND', 'Task not found', 404);
+  }
+
+  await prisma.todoTask.delete({ where: { id: taskId } });
 
   return success(res, { message: 'Task deleted' });
 }));
